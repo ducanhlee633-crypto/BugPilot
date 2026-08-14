@@ -1,0 +1,20 @@
+[project]
+name = "bugpilot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "ducanhlee633-crypto", email = "ducanhlee633@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.141.1",
+    "requests>=2.34.2",
+]
+
+[project.scripts]
+bugpilot = "bugpilot:main"
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"
