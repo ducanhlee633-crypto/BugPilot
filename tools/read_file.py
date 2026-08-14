@@ -2,9 +2,8 @@ from pathlib import Path
 import requests
 import json
 import os
-from dotenv import load_dotenv
 from tools.tool_kit import TOOLS
-
+from dotenv import load_dotenv
 
 load_dotenv()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -12,27 +11,14 @@ URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
 
 
+def read_file(file):
+    file = Path(f"projects/{file}")
+    content = file.read_text()
+    return content
 
-def list_files(folder):
-    folder = Path(f"projects/{folder}")
-
-    if not folder.exists():
-        raise FileNotFoundError(f"Folder 'projects/{folder}' does not exist")
-
-    if not folder.is_dir():
-        raise NotADirectoryError(f"'projects/{folder}' is not a directory")
-
-    try:
-        items = list(folder.iterdir())
-    except PermissionError:
-        raise PermissionError(f"No permission to read folder 'projects/{folder}'")
-    except OSError as e:
-        raise OSError(f"Failed to read folder 'projects/{folder}': {e}")
-
-    return [item.name for item in items]
+tools = TOOLS[1]
 
 
-tools = TOOLS[0]
 def call_tool(prompt):
     if not OPENROUTER_API_KEY:
         raise ValueError("OPENROUTER_API_KEY is not set in environment")
@@ -40,7 +26,7 @@ def call_tool(prompt):
     messages = [
         {
             "role": "user",
-            "content": f"Hãy chỉ liệt kê files có trong folder này {prompt}"
+            "content": f"Hãy phân tích cho tôi file này và tìm những điểm chưa tốt của nó {prompt}"
         }
     ]
 
@@ -86,7 +72,7 @@ def call_tool(prompt):
             raise RuntimeError(f"Invalid tool arguments from LLM: {e}")
         print("Arguments:", arguments)
         if function_name == "list_files":
-            result = list_files(**arguments)
+            result = read_file(**arguments)
         else:
             raise ValueError(f"Unknown function: {function_name}")
         print("Tool result:", result)
@@ -132,3 +118,4 @@ def call_tool(prompt):
         return content
     else:
         return message.get("content")
+
