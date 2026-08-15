@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BugPilot — code forensics agent</title>
+  <link rel="icon" type="image/png" href="/static/avatar_app.png" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-mark" src="/static/avatar_app.png" alt="BugPilot" />
+      <div class="brand-text">
+        <h1>BUGPILOT</h1>
+        <p class="tagline">code forensics agent · evidence before answers</p>
+      </div>
+    </div>
+
+    <div class="clone-box">
+      <form id="clone-form" autocomplete="off">
+        <input id="clone-url" type="text" placeholder="https://github.com/owner/repo.git" aria-label="Repository URL to clone" />
+        <button type="submit" id="clone-btn">Clone</button>
+      </form>
+      <p id="clone-status" class="clone-status" role="status"></p>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="rail" aria-label="Activity trail">
+      <div class="rail-head">
+        <span class="rail-title">ACTIVITY</span>
+        <span id="repo-count" class="rail-count">0 repos</span>
+      </div>
+
+      <ul id="repo-list" class="repo-list"></ul>
+
+      <div class="rail-divider"></div>
+
+      <ol id="rail-log" class="rail-log">
+        <li class="rail-empty">No case open yet.</li>
+      </ol>
+    </aside>
+
+    <section class="chat">
+      <div id="chat" class="chat-window">
+        <div class="empty-state" id="empty-state">
+          <img class="empty-glyph" src="/static/avatar_app.png" alt="" />
+          <p>No case open yet. Clone a repository above, then ask about its code.</p>
+          <p class="empty-hint">e.g. <button class="hint-btn" data-hint="what does this repository do?">what does this repository do?</button></p>
+        </div>
+      </div>
+
+      <div class="composer">
+        <form id="chat-form">
+          <textarea id="prompt" rows="1" placeholder="Ask about the code…" aria-label="Your question"></textarea>
+          <button type="submit" id="send-btn">Send</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

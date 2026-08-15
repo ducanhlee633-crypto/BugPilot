@@ -4,6 +4,7 @@ from pathlib import Path
 
 def clone_repo(url:str):
     project = Path("projects")
+    project.mkdir(exist_ok=True)
     result = subprocess.run(["git","clone",url], capture_output = True, text = True, check=True, cwd =project)
     if result.returncode != 0:
         return(result.stderr)    # in cảnh báo
