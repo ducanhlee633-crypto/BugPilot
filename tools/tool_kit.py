@@ -41,4 +41,28 @@ TOOLS = [
             }
         }
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "run_command",
+
+            "description": "Run command",
+
+            "parameters": {
+                "type": "object",
+
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "The command will run"
+                    },
+                    "folder": {
+                        "type": "string",
+                        "description": "The folder will run in"
+                    }, 
+                },
+                "required": ["command","folder"]
+            }
+        }
+    },
 ]

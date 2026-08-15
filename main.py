@@ -7,19 +7,21 @@ from schemas import Clone_repo, Prompt
 from tools.clone_repo import clone_repo
 from tools.list_files import list_files
 from tools.read_file import read_file
+from tools.run_command import run_command
 from tools.tool_kit import TOOLS
 from system_prompt import SYSTEM_PROMPT
 app = FastAPI()
 load_dotenv()
 
 URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "nvidia/nemotron-3-super-120b-a12b:free"
+MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # ánh xạ tên tool (khai báo trong TOOLS) -> hàm Python thật
 TOOL_FUNCTIONS = {
     "list_files": list_files,
     "read_file": read_file,
+    "run_command": run_command, 
 }
 
 
@@ -43,11 +45,31 @@ def call_llm(messages):
             },
             timeout=60
         )
-        data = response.json()
-        message = data["choices"][0]["message"]
-        return message
+    except requests.exceptions.Timeout:
+        raise ConnectionError("OpenRouter API timed out after 60s")
+    except requests.exceptions.ConnectionError:
+        raise ConnectionError("Failed to connect to OpenRouter API")
     except requests.exceptions.RequestException as e:
         raise ConnectionError(f"Failed to reach OpenRouter API: {e}")
+
+    if response.status_code != 200:
+        raise ConnectionError(
+            f"OpenRouter API returned HTTP {response.status_code}: {response.text[:500]}"
+        )
+
+    try:
+        data = response.json()
+    except requests.exceptions.JSONDecodeError as e:
+        raise ConnectionError(f"OpenRouter API returned invalid JSON: {e}")
+
+    if "error" in data:
+        raise ConnectionError(f"OpenRouter API error: {data['error']}")
+
+    choices = data.get("choices")
+    if not choices or not choices[0].get("message"):
+        raise ConnectionError(f"OpenRouter API returned unexpected response: {data}")
+
+    return choices[0]["message"]
 
 @app.post("/call_agent")
 def call_tool(prompt:Prompt):
@@ -69,14 +91,17 @@ def call_tool(prompt:Prompt):
             return message.get("content")
         tool_call = message["tool_calls"][0]
         function_name = tool_call["function"]["name"]
-        arguments = json.loads(
-            tool_call["function"]["arguments"]
-        )
+        try:
+            arguments = json.loads(tool_call["function"]["arguments"])
+        except (json.JSONDecodeError, TypeError) as e:
+            raise ValueError(f"Invalid tool arguments JSON from model: {e}")
         func = TOOL_FUNCTIONS.get(function_name)
         if func is None:
-            raise ValueError
-        result = func(**arguments)
-        arguments = json.loads(tool_call["function"]["arguments"])
+            raise ValueError(f"Unknown tool '{function_name}'")
+        try:
+            result = func(**arguments)
+        except TypeError as e:
+            raise TypeError(f"Invalid arguments for tool '{function_name}': {e}")
         print("ARGS:", arguments)
         messages.append({
             "role":"tool",
