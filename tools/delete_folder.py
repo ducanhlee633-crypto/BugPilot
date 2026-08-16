@@ -1,12 +1,15 @@
-import subprocess
+import shutil
 from pathlib import Path
 
 
 def delete_folder(folder: str):
-    project = Path("projects")
+    project = Path("projects").resolve()
     project.mkdir(exist_ok=True)
-    result = subprocess.run(["rm", "-rf", folder], capture_output=True, text=True, check=False, cwd=project)
-    if result.returncode != 0:
-        return(result.stderr)
-    else:
-        return("Deleted Successfully")
+    folder = str(folder).strip().strip("'\"")
+    target = (project / folder).resolve()
+    if target == project or project not in target.parents:
+        return f"ERROR: Path '{folder}' is outside projects/."
+    if not target.exists():
+        return f"ERROR: Folder '{folder}' does not exist."
+    shutil.rmtree(target)
+    return "Deleted Successfully"
