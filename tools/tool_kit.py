@@ -65,4 +65,54 @@ TOOLS = [
             }
         }
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "write_file",
+
+            "description": "Write content to a file (creates parent folders if needed)",
+
+            "parameters": {
+                "type": "object",
+
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "description": "The file name or path inside projects/, e.g. 'folder/main.py'"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "The content to write"
+                    }
+                },
+
+                "required": ["file", "content"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "delete_object_in_file",
+
+            "description": "Delete a content string from a file (remove matching text)",
+
+            "parameters": {
+                "type": "object",
+
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "description": "The file name or path inside projects/"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "The exact content string to delete"
+                    }
+                },
+
+                "required": ["file", "content"]
+            }
+        }
+    },
 ]

@@ -13,6 +13,7 @@ from tools.list_files import list_files
 from tools.read_file import read_file
 from tools.run_command import run_command
 from tools.tool_kit import TOOLS
+from tools.modified_file import write_file, delete_object_in_file
 from system_prompt import SYSTEM_PROMPT
 from short_memory import short_term_memory
 app = FastAPI()
@@ -45,7 +46,9 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 TOOL_FUNCTIONS = {
     "list_files": list_files,
     "read_file": read_file,
-    "run_command": run_command, 
+    "run_command": run_command,
+    "write_file": write_file,
+    "delete_object_in_file": delete_object_in_file,
 }
 
 

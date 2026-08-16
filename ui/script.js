@@ -26,10 +26,49 @@
       .replaceAll('"', "&quot;");
   }
 
+  /* ---------- syntax highlighting ---------- */
+
+  const HL_RE =
+    /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->|#[^\n]*)|(&quot;.*?&quot;|'[^'\n]*')|(`[^`]*`)|(\b\d[\d_]*(?:\.\d+)?\b)|(\b(?:def|class|import|from|return|if|elif|else|for|while|try|except|finally|with|as|lambda|pass|break|continue|global|nonlocal|yield|raise|assert|del|in|is|not|and|or|async|await|match|case|function|const|let|var|new|typeof|instanceof|void|switch|do|catch|throw|export|require|true|false|null|undefined|this|static|extends|super|of|using|namespace|public|private|protected|int|str|float|bool|list|dict|tuple|set|void|char|double|long|self)\b)|(\b[A-Z][A-Za-z0-9_]*\b)|(\b[A-Za-z_][A-Za-z0-9_]*(?=\s*\())/g;
+
+  function highlightLine(line) {
+    return line.replace(HL_RE, (m, com, str, bck, num, key, type, fn) => {
+      if (com) return `<span class="c-com">${com}</span>`;
+      if (str) return `<span class="c-str">${str}</span>`;
+      if (bck) return `<span class="c-str">${bck}</span>`;
+      if (num) return `<span class="c-num">${num}</span>`;
+      if (key) return `<span class="c-key">${key}</span>`;
+      if (type) return `<span class="c-type">${type}</span>`;
+      return `<span class="c-fn">${fn}</span>`;
+    });
+  }
+
+  function isErrorLine(line) {
+    const t = line.trim();
+    if (/^(?:error|fatal|traceback|exception|failed|fail|abort|denied|refused|cannot|unable|✗|❌)(?:\s|:|!|$)/i.test(t)) return "hl-err-line";
+    if (/^traceback \(most recent call last\)/i.test(t)) return "hl-err-line";
+    if (/^\w+(?:Error|Exception|Failure)\b/i.test(t)) return "hl-err-line";
+    if (/[:：]\s*(?:error|fatal|exception|failed)\s*$/i.test(t)) return "hl-err-line";
+    if (/^remote:.*(?:error|fatal|denied)/i.test(t)) return "hl-err-line";
+    if (/^(?:warning|warn)(?:\s|:|!|$)/i.test(t)) return "hl-warn-line";
+    return null;
+  }
+
+  function highlightCode(src) {
+    return src
+      .split("\n")
+      .map((rawLine) => {
+        const line = highlightLine(esc(rawLine));
+        const cls = isErrorLine(rawLine);
+        return cls ? `<span class="${cls}">${line}</span>` : line;
+      })
+      .join("\n");
+  }
+
   function renderMarkdown(text) {
     const blocks = [];
-    text = text.replace(/```([\s\S]*?)```/g, (_, code) => {
-      blocks.push(esc(code));
+    text = text.replace(/```([\w+-]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+      blocks.push(highlightCode(code));
       return `\u0000${blocks.length - 1}\u0000`;
     });
 
@@ -42,7 +81,6 @@
       .replace(/^[-*] (.+)$/gm, "<li>$1</li>")
       .replace(/^\d+\. (.+)$/gm, "<li>$1</li>");
 
-    html = html.replace(/(<li>[\s\S]*?<\/li>)(?!<\/li>)/g, "");
     html = html.replace(/((?:<li>.*?<\/li>\n?)+)/g, "<ul>$1</ul>");
     html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
     html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
@@ -73,21 +111,40 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
+  let evCounter = 0;
+
+  const EV_GLYPH = { busy: "●", done: "✓", fail: "✗" };
+
+  function nowTime() {
+    return new Date().toTimeString().slice(0, 8);
+  }
+
   function railEvent(name, metaText, state) {
     const empty = $(".rail-empty");
     empty?.remove();
+    evCounter += 1;
     const li = document.createElement("li");
     li.className = `rail-event ${state || ""}`;
+    const glyph = document.createElement("span");
+    glyph.className = "ev-glyph";
+    glyph.textContent = EV_GLYPH[state] || "·";
+    glyph.setAttribute("aria-hidden", "true");
+    const body = document.createElement("div");
+    body.className = "ev-body";
     const nameEl = document.createElement("div");
     nameEl.className = "ev-name";
     nameEl.textContent = name;
-    li.appendChild(nameEl);
+    body.appendChild(nameEl);
     if (metaText) {
       const meta = document.createElement("div");
       meta.className = "ev-meta";
-      meta.textContent = metaText;
-      li.appendChild(meta);
+      const time = document.createElement("span");
+      time.className = "ev-time";
+      time.textContent = `#${String(evCounter).padStart(2, "0")} ${nowTime()}`;
+      meta.append(time, document.createTextNode(metaText));
+      body.appendChild(meta);
     }
+    li.append(glyph, body);
     railLog.prepend(li);
     return li;
   }
