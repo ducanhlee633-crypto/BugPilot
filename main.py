@@ -14,6 +14,7 @@ from tools.read_file import read_file
 from tools.run_command import run_command
 from tools.tool_kit import TOOLS
 from system_prompt import SYSTEM_PROMPT
+from short_memory import short_term_memory
 app = FastAPI()
 load_dotenv()
 
@@ -116,20 +117,24 @@ def call_tool(prompt:Prompt):
     if not API_KEY:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not set in environment. Add it to .env and restart the server.")
 
+    
     messages = [
         {
             "role":"user",
             "content": f"{SYSTEM_PROMPT} folled strictly the system prompt to do this task. {prompt}"
         }
-    ]
+    ] 
+    history = short_term_memory(messages)
 
     try:
         for _ in range (12):
-            message = call_llm(messages)
+            message = call_llm(messages+history)
             messages.append(message)
 
             if not message.get("tool_calls"):
-                return message.get("content") or "(no answer from model)"
+                result =  message.get("content") or "(no answer from model)"
+                short_term_memory([{"role":"assistant", "content":result}])
+                return result
             tool_call = message["tool_calls"][0]
             function_name = tool_call["function"]["name"]
             try:
