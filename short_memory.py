@@ -2,6 +2,6 @@
 messages = []
 
 def short_term_memory(message):
-    messages.append(message)
+    messages.extend(message)
     print(message)
     return messages
