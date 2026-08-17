@@ -46,9 +46,9 @@ def delete_repo_endpoint(folder: Delete_folder):
 
 
 @app.post("/call_agent")
-def call_agent_endpoint(prompt: Prompt):
+async def call_agent_endpoint(prompt: Prompt):
     try:
-        return call_tool(prompt)
+        return await call_tool(prompt)
     except HTTPException:
         raise
     except Exception as e:

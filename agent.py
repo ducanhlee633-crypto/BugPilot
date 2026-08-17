@@ -30,9 +30,9 @@ TOOL_FUNCTIONS = {
 
 
 
-def call_llm(messages):
+async def call_llm(messages):
     try:
-        response = httpx.post(
+        response =  await httpx.AsyncClient().post(
             url=URL,
             headers={
                 "Authorization": f"Bearer {API_KEY}",
@@ -75,7 +75,7 @@ def call_llm(messages):
 
     return choices[0]["message"]
 
-def call_tool(prompt: Prompt):
+async def call_tool(prompt: Prompt):
     if not API_KEY:
                 raise ConnectionError("OLLAMA_API_KEY is not set in environment. Add it to .env and restart the server.")
 
@@ -90,7 +90,7 @@ def call_tool(prompt: Prompt):
 
     try:
         while True:
-            message = call_llm(messages)
+            message = await call_llm(messages)
             messages.append(message)
 
             if not message.get("tool_calls"):
