@@ -10,7 +10,7 @@ from tools.tool_kit import TOOLS
 from tools.modified_file import write_file, delete_object_in_file
 from system_prompt import SYSTEM_PROMPT
 from short_memory import short_term_memory
-import time
+import asyncio
 load_dotenv()
 
 URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -78,15 +78,12 @@ async def call_llm(messages):
 async def call_tool(prompt: Prompt):
     if not API_KEY:
                 raise ConnectionError("OLLAMA_API_KEY is not set in environment. Add it to .env and restart the server.")
+    history = short_term_memory({"role":"user","content":prompt.prompt})
 
-    
     messages = [
-        {
-            "role":"user",
-            "content": f"{SYSTEM_PROMPT} folled strictly the system prompt to do this task. {prompt}"
-        }
-    ] 
-    short_term_memory(messages)
+        {"role":"system","content":SYSTEM_PROMPT},
+        *[m for m in history[-10:] if m.get("role") != "system"],
+    ]
 
     try:
         while True:
@@ -95,7 +92,7 @@ async def call_tool(prompt: Prompt):
 
             if not message.get("tool_calls"):
                 result =  message.get("content") or "(no answer from model)"
-                short_term_memory(result)
+                short_term_memory({"role":"assistant", "content":result})
                 return result
             tool_call = message["tool_calls"][0]
             function_name = tool_call["function"]["name"]
@@ -116,6 +113,6 @@ async def call_tool(prompt: Prompt):
                 "tool_call_id": tool_call["id"],
                 "content": str(result)
             })
-            time.sleep(15)
+            await asyncio.sleep(1)
     except Exception as e:
         raise RuntimeError(f"Agent error: {e}") from e
