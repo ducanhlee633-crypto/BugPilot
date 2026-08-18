@@ -5,7 +5,7 @@ BugPilot is an AI agent that analyzes and edits cloned source code repositories.
 ## Features
 
 - **AI-driven code exploration & editing** — sends a task prompt to an LLM with tool-calling enabled
-- **Tool loop** — the agent calls tools, receives results, and keeps going until it has a final answer (max 12 iterations)
+- **Tool loop** — the agent calls tools, receives results, and keeps going until it has a final answer
 - **Grounding tools**:
   - `list_files` — list files in a cloned repository folder
   - `read_file` — read a file's contents

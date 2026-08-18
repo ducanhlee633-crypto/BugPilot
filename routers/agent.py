@@ -6,7 +6,7 @@ from schemas import Prompt
 from tools.list_files import list_files
 from tools.read_file import read_file
 from tools.run_command import run_command
-from tools.tool_kit import TOOLS
+from tools.tool_kit import OBSERVE_TOOLS, ACT_TOOLS
 from tools.modified_file import write_file, delete_object_in_file
 from system_prompt import SYSTEM_PROMPT
 from short_memory import short_term_memory
@@ -17,9 +17,9 @@ router = APIRouter()
 
 load_dotenv()
 
-URL = "https://api.groq.com/openai/v1/chat/completions"
-MODEL = "qwen/qwen3.6-27b"
-API_KEY = os.getenv("GROQ_API_KEY")
+URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+MODEL = "gemini-3.5-flash-lite"
+API_KEY = os.getenv("GEMINI_API_KEY")
 
 TOOL_FUNCTIONS = {
     "list_files": list_files,
@@ -34,7 +34,8 @@ TOOL_FUNCTIONS = {
 
 
 
-async def call_llm(messages):
+async def call_llm(messages, tools):
+
     try:
         response =  await httpx.AsyncClient().post(
             url=URL,
@@ -45,7 +46,7 @@ async def call_llm(messages):
             json={
                 "model": MODEL,
                 "messages": messages,
-                "tools": TOOLS
+                "tools": tools
             },
             timeout=60
         )
@@ -90,34 +91,124 @@ async def call_tool(prompt: Prompt):
     ]
 
     try:
-        while True:
-            message = await call_llm(messages)
+        for _ in range(5):
+
+            # =========================
+            # OBSERVE
+            # =========================
+
+            print("=== OBSERVE ===")
+
+            message = await call_llm(
+                messages,
+                OBSERVE_TOOLS
+            )
+
+            tool_calls = message.get("tool_calls", [])
+
+            
             messages.append(message)
 
-            if not message.get("tool_calls"):
-                result =  message.get("content") or "(no answer from model)"
-                short_term_memory({"role":"assistant", "content":result})
-                return result
-            tool_call = message["tool_calls"][0]
-            function_name = tool_call["function"]["name"]
-            try:
-                arguments = json.loads(tool_call["function"]["arguments"])
-            except (json.JSONDecodeError, TypeError) as e:
-                raise ValueError(f"Invalid tool arguments JSON from model: {e}")
-            func = TOOL_FUNCTIONS.get(function_name)
-            if func is None:
-                raise ValueError(f"Unknown tool '{function_name}'")
-            try:
+            for tool_call in tool_calls:
+
+                function_name = tool_call["function"]["name"]
+
+                arguments = json.loads(
+                    tool_call["function"]["arguments"]
+                )
+
+                func = TOOL_FUNCTIONS.get(function_name)
+
+                if func is None:
+                    raise ValueError(
+                        f"Unknown tool '{function_name}'"
+                    )
+
                 result = func(**arguments)
-            except TypeError as e:
-                raise TypeError(f"Invalid arguments for tool '{function_name}': {e}")
-            print("ARGS:", arguments)
-            messages.append({
-                "role":"tool",
-                "tool_call_id": tool_call["id"],
-                "content": str(result)
-            })
-            await asyncio.sleep(1)
+
+                print("OBSERVE:", function_name)
+                print("ARGS:", arguments)
+
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "content": str(result)
+                })
+
+
+            # =========================
+            # THINK
+            # =========================
+
+            print("=== THINK ===")
+
+            message = await call_llm(
+                messages,
+                []
+            )
+
+            messages.append(message)
+
+
+            # =========================
+            # ACT
+            # =========================
+
+            print("=== ACT ===")
+
+            message = await call_llm(
+                messages,
+                ACT_TOOLS
+            )
+
+            messages.append(message)
+
+
+            if not message.get("tool_calls"):
+
+                result = (
+                    message.get("content")
+                    or "(no answer from model)"
+                )
+
+                short_term_memory({
+                    "role": "assistant",
+                    "content": result
+                })
+
+                return result
+
+
+            # =========================
+            # EXECUTE ACT TOOLS
+            # =========================
+
+            for tool_call in message["tool_calls"]:
+
+                function_name = tool_call["function"]["name"]
+
+                arguments = json.loads(
+                    tool_call["function"]["arguments"]
+                )
+
+                func = TOOL_FUNCTIONS.get(function_name)
+
+                if func is None:
+                    raise ValueError(
+                        f"Unknown tool '{function_name}'"
+                    )
+
+                result = func(**arguments)
+
+                print("ACT:", function_name)
+                print("ARGS:", arguments)
+
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "content": str(result)
+                })
+
     except Exception as e:
         raise RuntimeError(f"Agent error: {e}") from e
 

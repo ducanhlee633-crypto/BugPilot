@@ -116,3 +116,13 @@ TOOLS = [
         }
     },
 ]
+
+OBSERVE_TOOLS = [
+    tool for tool in TOOLS
+    if tool["function"]["name"] in {"list_files", "read_file"}
+]
+
+ACT_TOOLS = [
+    tool for tool in TOOLS
+    if tool["function"]["name"] in {"run_command", "write_file", "delete_object_in_file"}
+]
