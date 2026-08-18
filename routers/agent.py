@@ -11,6 +11,10 @@ from tools.modified_file import write_file, delete_object_in_file
 from system_prompt import SYSTEM_PROMPT
 from short_memory import short_term_memory
 import asyncio
+from fastapi import HTTPException, APIRouter
+
+router = APIRouter()
+
 load_dotenv()
 
 URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -116,3 +120,13 @@ async def call_tool(prompt: Prompt):
             await asyncio.sleep(1)
     except Exception as e:
         raise RuntimeError(f"Agent error: {e}") from e
+
+
+@router.post("")
+async def call_agent_endpoint(prompt: Prompt):
+    try:
+        return await call_tool(prompt)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Agent error: {e}")

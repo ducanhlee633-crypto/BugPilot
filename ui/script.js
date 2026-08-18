@@ -202,7 +202,7 @@
     setCloneStatus("cloning…", "busy");
     const ev = railEvent("git clone", url, "busy");
     try {
-      const res = await fetch("/clone_repo", {
+      const res = await fetch("/repo/clone", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
@@ -234,7 +234,7 @@
     btn.disabled = true;
     const ev = railEvent("delete repo", name, "busy");
     try {
-      const res = await fetch("/delete_repo", {
+      const res = await fetch("/repo/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder: name }),
