@@ -6,11 +6,10 @@ from schemas import Prompt
 from tools.list_files import list_files
 from tools.read_file import read_file
 from tools.run_command import run_command
-from tools.tool_kit import OBSERVE_TOOLS, ACT_TOOLS
+from tools.tool_kit import TOOLS
 from tools.modified_file import write_file, delete_object_in_file
 from system_prompt import SYSTEM_PROMPT
 from short_memory import short_term_memory
-import asyncio
 from fastapi import HTTPException, APIRouter
 
 router = APIRouter()
@@ -82,7 +81,7 @@ async def call_llm(messages, tools):
 
 async def call_tool(prompt: Prompt):
     if not API_KEY:
-                raise ConnectionError("OLLAMA_API_KEY is not set in environment. Add it to .env and restart the server.")
+                raise ConnectionError("GEMINI_API_KEY is not set in environment. Add it to .env and restart the server.")
     history = short_term_memory({"role":"user","content":prompt.prompt})
 
     messages = [
@@ -91,81 +90,16 @@ async def call_tool(prompt: Prompt):
     ]
 
     try:
-        for _ in range(5):
-
-            # =========================
-            # OBSERVE
-            # =========================
-
-            print("=== OBSERVE ===")
-
+        for _ in range(13):
             message = await call_llm(
                 messages,
-                OBSERVE_TOOLS
+                TOOLS
             )
 
             tool_calls = message.get("tool_calls", [])
-
-            
             messages.append(message)
 
-            for tool_call in tool_calls:
-
-                function_name = tool_call["function"]["name"]
-
-                arguments = json.loads(
-                    tool_call["function"]["arguments"]
-                )
-
-                func = TOOL_FUNCTIONS.get(function_name)
-
-                if func is None:
-                    raise ValueError(
-                        f"Unknown tool '{function_name}'"
-                    )
-
-                result = func(**arguments)
-
-                print("OBSERVE:", function_name)
-                print("ARGS:", arguments)
-
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call["id"],
-                    "content": str(result)
-                })
-
-
-            # =========================
-            # THINK
-            # =========================
-
-            print("=== THINK ===")
-
-            message = await call_llm(
-                messages,
-                []
-            )
-
-            messages.append(message)
-
-
-            # =========================
-            # ACT
-            # =========================
-
-            print("=== ACT ===")
-
-            message = await call_llm(
-                messages,
-                ACT_TOOLS
-            )
-
-            messages.append(message)
-
-
-            if not message.get("tool_calls"):
-
+            if not tool_calls:
                 result = (
                     message.get("content")
                     or "(no answer from model)"
@@ -178,18 +112,16 @@ async def call_tool(prompt: Prompt):
 
                 return result
 
-
-            # =========================
-            # EXECUTE ACT TOOLS
-            # =========================
-
-            for tool_call in message["tool_calls"]:
+            for tool_call in tool_calls:
 
                 function_name = tool_call["function"]["name"]
 
-                arguments = json.loads(
-                    tool_call["function"]["arguments"]
-                )
+                try:
+                    arguments = json.loads(
+                        tool_call["function"]["arguments"]
+                    )
+                except json.JSONDecodeError:
+                    arguments = {}
 
                 func = TOOL_FUNCTIONS.get(function_name)
 
@@ -198,9 +130,15 @@ async def call_tool(prompt: Prompt):
                         f"Unknown tool '{function_name}'"
                     )
 
-                result = func(**arguments)
+                try:
+                    result = func(**arguments)
+                except Exception as e:
+                    result = (
+                        f"ERROR: Tool '{function_name}' failed with "
+                        f"arguments {arguments}: {e}"
+                    )
 
-                print("ACT:", function_name)
+                print("Action:", function_name)
                 print("ARGS:", arguments)
 
                 messages.append({

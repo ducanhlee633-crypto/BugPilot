@@ -1,10 +1,14 @@
 from pathlib import Path
 
 
+PROJECT_ROOT = Path("projects").resolve()
+
 def list_files(folder):
     try:
         folder = str(folder).strip().strip("'\"").rstrip("/")
-        path = Path(f"projects/{folder}")
+        path = (PROJECT_ROOT / folder).resolve()
+        if not path.is_relative_to(PROJECT_ROOT):
+            return f"ERROR: Folder '{folder}' is outside projects/."
         if not path.exists():
             return f"ERROR: Folder '{folder}' does not exist in projects/."
         if not path.is_dir():

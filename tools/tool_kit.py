@@ -31,13 +31,17 @@ TOOLS = [
                 "type": "object",
 
                 "properties": {
+                    "folder": {
+                        "type": "string",
+                        "description": "The name of a subfolder inside the projects/ directory, e.g. '-ONE-PIECE-CREW-MANAGER'. Do NOT include the 'projects/' prefix."
+                    },
                     "file": {
                         "type": "string",
-                        "description": "The file name"
+                        "description": "The file name or path inside the folder, e.g. 'src/main.py'"
                     }
                 },
 
-                "required": ["file"]
+                "required": ["folder", "file"]
             }
         }
     },
@@ -76,9 +80,13 @@ TOOLS = [
                 "type": "object",
 
                 "properties": {
+                    "folder": {
+                        "type": "string",
+                        "description": "The name of a subfolder inside the projects/ directory, e.g. '-ONE-PIECE-CREW-MANAGER'. Do NOT include the 'projects/' prefix."
+                    },
                     "file": {
                         "type": "string",
-                        "description": "The file name or path inside projects/, e.g. 'folder/main.py'"
+                        "description": "The file name or path inside the folder, e.g. 'src/main.py'"
                     },
                     "content": {
                         "type": "string",
@@ -86,7 +94,7 @@ TOOLS = [
                     }
                 },
 
-                "required": ["file", "content"]
+                "required": ["folder", "file", "content"]
             }
         }
     },
@@ -101,9 +109,13 @@ TOOLS = [
                 "type": "object",
 
                 "properties": {
+                    "folder": {
+                        "type": "string",
+                        "description": "The name of a subfolder inside the projects/ directory, e.g. '-ONE-PIECE-CREW-MANAGER'. Do NOT include the 'projects/' prefix."
+                    },
                     "file": {
                         "type": "string",
-                        "description": "The file name or path inside projects/"
+                        "description": "The file name or path inside the folder, e.g. 'src/main.py'"
                     },
                     "content": {
                         "type": "string",
@@ -111,7 +123,7 @@ TOOLS = [
                     }
                 },
 
-                "required": ["file", "content"]
+                "required": ["folder", "file", "content"]
             }
         }
     },
@@ -119,10 +131,10 @@ TOOLS = [
 
 OBSERVE_TOOLS = [
     tool for tool in TOOLS
-    if tool["function"]["name"] in {"list_files", "read_file"}
+    if tool["function"]["name"] in {"list_files", "read_file", "run_command"}
 ]
 
 ACT_TOOLS = [
     tool for tool in TOOLS
-    if tool["function"]["name"] in {"run_command", "write_file", "delete_object_in_file"}
+    if tool["function"]["name"] in {"write_file", "delete_object_in_file"}
 ]
