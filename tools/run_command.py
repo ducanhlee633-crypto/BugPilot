@@ -77,9 +77,10 @@ def run_command(command:str,folder):
         if not cmd:
             return "ERROR: Command is empty."
         cmd_t = tuple(cmd)
+        # allow args: e.g. git log --oneline -10 should match ("git","log")
         allowance = (
             cmd[0] in READ_ONLY_COMMANDS
-            or cmd_t[:2] in GIT_COMMANDS or cmd_t in GIT_COMMANDS
+            or cmd_t[:2] in GIT_COMMANDS
             or cmd_t[:3] in PYTHON_COMMANDS or cmd_t in PYTHON_COMMANDS
             or cmd[0] in TEST_COMMANDS
             or cmd_t[:3] in JS_COMMANDS or cmd_t in JS_COMMANDS
